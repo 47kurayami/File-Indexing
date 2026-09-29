@@ -4,7 +4,7 @@
 A Java app that indexes local documents and searches them by keyword.
 
 ## Features
-- Index a folder of .txt, .md, .csv, .json, .html, .docx (and .pdf with PDFBox)
+- Index a folder of .txt, .md, .csv, .json, .html, .docx
 - Keyword frequency ranking across multiple documents
 - Search history with timestamps
 - Collections: named groups of files to search within
@@ -14,9 +14,6 @@ A Java app that indexes local documents and searches them by keyword.
     java MainApp        # GUI
     java Main           # command line
 
-## PDF support (optional)
-Download pdfbox-app-3.0.x.jar into this folder, then:
-    java -cp ".:pdfbox-app-3.0.x.jar" MainApp
 
 ## How it works
 Each file is read, split into words, and stored in an inverted index
