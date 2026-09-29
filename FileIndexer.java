@@ -1,6 +1,5 @@
-import java.io.*;        // File, IOException
-import java.nio.file.*;  // Files (for Files.readString)
-import java.util.*;      // Map, HashMap, List, Set, HashSet
+import java.io.*;
+import java.util.*;
 
 public class FileIndexer {
     // word -> (filename -> count)
@@ -10,32 +9,36 @@ public class FileIndexer {
     private Set<String> indexedFiles = new HashSet<>();
 
     public void clear() {
-    index.clear();
-    indexedFiles.clear();
-}
+        index.clear();
+        indexedFiles.clear();
+    }
 
     public void indexFolder(File folder) throws IOException {
         System.out.println("Looking in: " + folder.getAbsolutePath());
         System.out.println("Exists? " + folder.exists() + ", is directory? " + folder.isDirectory());
 
-        File[] files = folder.listFiles((dir, name) -> name.toLowerCase().endsWith(".txt"));
+        File[] files = folder.listFiles(DocumentReader::isSupported);
         if (files == null) {
             System.out.println("Could not read folder.");
             return;
         }
-        System.out.println("Found " + files.length + " .txt file(s)");
+        System.out.println("Found " + files.length + " supported file(s)");
 
         for (File file : files) {
-            indexFile(file);
+            try {
+                indexFile(file);
+            } catch (IOException e) {
+                System.out.println("Skipped " + file.getName() + ": " + e.getMessage());
+            }
         }
     }
 
     private void indexFile(File file) throws IOException {
-        String content = Files.readString(file.toPath());
+        String content = DocumentReader.read(file);
         List<String> words = Tokenizer.tokenize(content);
         String fileName = file.getName();
 
-        indexedFiles.add(fileName);   // NEW
+        indexedFiles.add(fileName);
 
         for (String word : words) {
             index.putIfAbsent(word, new HashMap<>());
@@ -48,7 +51,6 @@ public class FileIndexer {
         return index;
     }
 
-    // NEW
     public Set<String> getIndexedFiles() {
         return indexedFiles;
     }
