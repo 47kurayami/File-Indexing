@@ -1,10 +1,8 @@
-# Java compiled files
 *.class
 .DS_Store
-# VS Code
 .vscode/
-
-# Build/output folders
 target/
 out/
 bin/
+/test
+
