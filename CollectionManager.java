@@ -1,23 +1,18 @@
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class CollectionManager {
-    // collection name -> set of file names
-    private Map<String, Set<String>> collections = new HashMap<>();
+    private final Map<String, Set<String>> collections = new TreeMap<>();
 
     public boolean create(String name) {
-        if (collections.containsKey(name)) return false;
-        collections.put(name, new HashSet<>());
-        return true;
+        return collections.putIfAbsent(name, new TreeSet<>()) == null;
     }
-    
-public Set<String> getNames() {
-    return new TreeSet<>(collections.keySet());
-}
 
     public boolean addFile(String name, String fileName) {
         Set<String> files = collections.get(name);
-        if (files == null) return false;
-        return files.add(fileName);   // false if already in it
+        return files != null && files.add(fileName);
     }
 
     public boolean exists(String name) {
@@ -25,15 +20,14 @@ public Set<String> getNames() {
     }
 
     public Set<String> get(String name) {
-        return collections.get(name);
+        return collections.getOrDefault(name, Set.of());
     }
 
-    public void showAll() {
-        if (collections.isEmpty()) {
-            System.out.println("No collections yet.");
-            return;
-        }
-        collections.forEach((name, files) ->
-            System.out.println(name + " -> " + files));
+    public Set<String> names() {
+        return collections.keySet();
+    }
+
+    public void retainAll(Set<String> indexedFiles) {
+        collections.values().forEach(files -> files.retainAll(indexedFiles));
     }
 }

@@ -1,34 +1,35 @@
-import java.util.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class SearchHistory {
-    private List<SearchRecord> records = new ArrayList<>();
+    public record Entry(String query, int resultCount, LocalDateTime time) {
+        private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
-
-public List<String> getLines() {
-    List<String> lines = new ArrayList<>();
-    for (int i = records.size() - 1; i >= 0; i--) {   // newest first
-        lines.add(records.get(i).toString());
+        @Override
+        public String toString() {
+            return "[" + time.format(FORMAT) + "] \"" + query + "\" -> " + resultCount + " result(s)";
+        }
     }
-    return lines;
-}
 
+    private final List<Entry> entries = new ArrayList<>();
 
     public void add(String query, int resultCount) {
-        records.add(new SearchRecord(query, resultCount));
+        entries.add(new Entry(query, resultCount, LocalDateTime.now()));
     }
 
-    public void show() {
-        if (records.isEmpty()) {
-            System.out.println("No search history yet.");
-            return;
+    
+    public List<String> lines() {
+        List<String> lines = new ArrayList<>();
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            lines.add(entries.get(i).toString());
         }
-        // most recent first
-        for (int i = records.size() - 1; i >= 0; i--) {
-            System.out.println(records.get(i));
-        }
+        return lines;
     }
 
     public void clear() {
-        records.clear();
+        entries.clear();
     }
 }

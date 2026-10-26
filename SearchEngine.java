@@ -1,36 +1,48 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class SearchEngine {
-    private Map<String, Map<String, Integer>> index;
+    public record Hit(String file, int score) {
+    }
+
+    private final Map<String, Map<String, Integer>> index;
 
     public SearchEngine(Map<String, Map<String, Integer>> index) {
         this.index = index;
     }
 
-    // returns files ranked by total keyword frequency, highest first
-    public List<Map.Entry<String, Integer>> search(String query) {
+    public List<Hit> search(String query, Set<String> allowed) {
         Map<String, Integer> scores = new HashMap<>();
 
         for (String word : Tokenizer.tokenize(query)) {
-            Map<String, Integer> fileCounts = index.get(word);
-            if (fileCounts == null) continue;   // word not in any file
+            Map<String, Integer> counts = index.get(word);
+            if (counts == null) continue;   
 
-            for (Map.Entry<String, Integer> e : fileCounts.entrySet()) {
-                scores.merge(e.getKey(), e.getValue(), Integer::sum);
+            for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+                if (allowed == null || allowed.contains(entry.getKey())) {
+                    scores.merge(entry.getKey(), entry.getValue(), Integer::sum);
+                }
             }
         }
 
-        List<Map.Entry<String, Integer>> results = new ArrayList<>(scores.entrySet());
-        Collections.sort(results, (a, b) -> b.getValue() - a.getValue());
-        return results;
-    }   // <- first method ends here
+        return scores.entrySet().stream()
+            .map(entry -> new Hit(entry.getKey(), entry.getValue()))
+            .sorted(Comparator.comparingInt(Hit::score).reversed().thenComparing(Hit::file))
+            .toList();
+    }
 
-    // same search, but only keeps files that are in the given collection
-    public List<Map.Entry<String, Integer>> search(String query, Set<String> allowedFiles) {
-        List<Map.Entry<String, Integer>> results = search(query);
-        if (allowedFiles != null) {
-            results.removeIf(e -> !allowedFiles.contains(e.getKey()));
+    public static List<String> format(List<Hit> hits) {
+        if (hits.isEmpty()) return List.of("No results found.");
+
+        List<String> lines = new ArrayList<>();
+        for (int i = 0; i < hits.size(); i++) {
+            Hit hit = hits.get(i);
+            lines.add((i + 1) + ". " + hit.file() + "  (score: " + hit.score() + ")");
         }
-        return results;
+        return lines;
     }
 }

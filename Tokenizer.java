@@ -1,15 +1,20 @@
-//tokenizer, clean the raw text
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
-public class Tokenizer {
+public final class Tokenizer {
+    private static final Pattern SEPARATORS = Pattern.compile("[^\\p{L}\\p{N}\\p{M}_]+");
+
+    private Tokenizer() {
+    }
+
     public static List<String> tokenize(String text) {
-        String cleaned = text.toLowerCase().replaceAll("[^a-z0-9\\s]", " ");
-        String[] words = cleaned.split("\\s+");
         List<String> tokens = new ArrayList<>();
-        for (String w : words) {
-            if (!w.isBlank()) {
-                tokens.add(w);
-            }
+        if (text == null) return tokens;
+
+        for (String word : SEPARATORS.split(text.toLowerCase(Locale.ROOT))) {
+            if (!word.isEmpty()) tokens.add(word);
         }
         return tokens;
     }

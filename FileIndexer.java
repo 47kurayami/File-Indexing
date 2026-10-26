@@ -1,57 +1,59 @@
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
 public class FileIndexer {
-    // word -> (filename -> count)
-    private Map<String, Map<String, Integer>> index = new HashMap<>();
-
-    // names of every file that has been indexed
-    private Set<String> indexedFiles = new HashSet<>();
+    private final Map<String, Map<String, Integer>> index = new HashMap<>();
+    private final Set<String> indexedFiles = new TreeSet<>();
 
     public void clear() {
         index.clear();
         indexedFiles.clear();
     }
 
-    public void indexFolder(File folder) throws IOException {
-        System.out.println("Looking in: " + folder.getAbsolutePath());
-        System.out.println("Exists? " + folder.exists() + ", is directory? " + folder.isDirectory());
+    public int indexFolder(File folder) throws IOException {
+        Path root = folder.toPath();
+        if (!Files.isDirectory(root)) throw new IOException("Folder not found: " + root);
 
-        File[] files = folder.listFiles(DocumentReader::isSupported);
-        if (files == null) {
-            System.out.println("Could not read folder.");
-            return;
+        try (Stream<Path> paths = Files.walk(root)) {
+            paths.filter(Files::isRegularFile)
+                 .map(Path::toFile)
+                 .filter(DocumentReader::isSupported)
+                 .forEach(file -> indexSafely(root, file));
+        } catch (UncheckedIOException e) {
+            throw new IOException("Cannot read folder: " + e.getCause().getMessage(), e.getCause());
         }
-        System.out.println("Found " + files.length + " supported file(s)");
+        return indexedFiles.size();
+    }
 
-        for (File file : files) {
-            try {
-                indexFile(file);
-            } catch (IOException e) {
-                System.out.println("Skipped " + file.getName() + ": " + e.getMessage());
-            }
+    private void indexSafely(Path root, File file) {
+        try {
+            indexFile(root.relativize(file.toPath()).toString(), file);
+        } catch (IOException e) {
+            System.err.println("Skipped " + file.getName() + ": " + e.getMessage());
         }
     }
 
-    private void indexFile(File file) throws IOException {
-        String content = DocumentReader.read(file);
-        List<String> words = Tokenizer.tokenize(content);
-        String fileName = file.getName();
-
-        indexedFiles.add(fileName);
-
-        for (String word : words) {
-            index.putIfAbsent(word, new HashMap<>());
-            Map<String, Integer> fileCounts = index.get(word);
-            fileCounts.put(fileName, fileCounts.getOrDefault(fileName, 0) + 1);
+    private void indexFile(String name, File file) throws IOException {
+        indexedFiles.add(name);
+        for (String word : Tokenizer.tokenize(DocumentReader.read(file))) {
+            index.computeIfAbsent(word, w -> new HashMap<>())
+                 .merge(name, 1, Integer::sum);
         }
     }
 
-    public Map<String, Map<String, Integer>> getIndex() {
+    public Map<String, Map<String, Integer>> index() {
         return index;
     }
 
-    public Set<String> getIndexedFiles() {
+    public Set<String> files() {
         return indexedFiles;
     }
 }
